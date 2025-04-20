@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>單字記憶卡</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #00ffff;
+            --secondary-color: #ff00ff;
+            --bg-color: #0a0a1a;
+            --text-color: #e0e0ff;
+            --card-bg: rgba(20, 20, 50, 0.8);
+            --card-border: 1px solid var(--primary-color);
+            --card-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            --button-bg: rgba(0, 100, 200, 0.5);
+            --button-hover: rgba(0, 150, 255, 0.7);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding: 20px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            padding: 12px 25px;
+            margin: 0 10px;
+            cursor: pointer;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+        }
+
+        .tab:hover {
+            background-color: var(--button-hover);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .tab.active {
+            background-color: rgba(0, 200, 255, 0.3);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+        }
+
+        .content {
+            display: none;
+            padding: 20px;
+            border-radius: 10px;
+            border: var(--card-border);
+            background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            min-height: 400px;
+        }
+
+        .content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* 閃卡區域樣式 */
+        .flashcard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .flashcard {
+            height: 150px;
+            border-radius: 10px;
+            border: var(--card-border);
+            background: rgba(30, 30, 70, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            perspective: 1000px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .flashcard:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        .flashcard .front, .flashcard .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.6s ease;
+            border-radius: 10px;
+            padding: 15px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .flashcard .front {
+            transform: rotateY(0deg);
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, rgba(30, 30, 70, 0.9), rgba(50, 50, 90, 0.9));
+        }
+
+        .flashcard .back {
+            transform: rotateY(180deg);
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, rgba(50, 50, 100, 0.9), rgba(70, 70, 120, 0.9));
+            color: var(--primary-color);
+        }
+
+        .flashcard.flipped .front {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard.flipped .back {
+            transform: rotateY(0deg);
+        }
+
+        .mark-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 200, 200, 0.3);
+            border: 1px solid var(--primary-color);
+            color: var(--text-color);
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .flashcard:hover .mark-btn {
+            opacity: 1;
+        }
+
+        .mark-btn:hover {
+            background: rgba(0, 255, 255, 0.5);
+        }
+
+        /* 已標記單字區 */
+        .marked-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .marked-word {
+            background: rgba(50, 50, 100, 0.6);
+            border: 1px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .unmark-btn {
+            background: rgba(255, 100, 100, 0.3);
+            border: none;
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .unmark-btn:hover {
+            background: rgba(255, 100, 100, 0.6);
+        }
+
+        /* 自我檢測區 */
+        .quiz-container {
+            margin-top: 20px;
+        }
+
+        .quiz-word {
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+            background: rgba(40, 40, 80, 0.6);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            background: rgba(60, 60, 120, 0.8);
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .option.correct {
+            background: rgba(0, 255, 100, 0.3);
+            border-color: #00ff66;
+        }
+
+        .option.incorrect {
+            background: rgba(255, 50, 50, 0.3);
+            border-color: #ff3333;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .next-btn:hover {
+            background: var(--button-hover);
+        }
+
+        .score {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .loading:after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            margin-left: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 霓虹背景動畫 */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .grid {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: grid 15s linear infinite;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        @keyframes grid {
+            from {
+                transform: perspective(500px) rotateX(60deg) translateY(0);
+            }
+            to {
+                transform: perspective(500px) rotateX(60deg) translateY(40px);
+            }
+        }
+
+        .no-words {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="background">
+        <div class="grid"></div>
+        <div class="stars" id="stars"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>星際單字學習站</h1>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="flashcards">閃卡學習</div>
+            <div class="tab" data-tab="marked">已學單字</div>
+            <div class="tab" data-tab="quiz">自我檢測</div>
+        </div>
+
+        <div class="content active" id="flashcards">
+            <div id="flashcard-loading" class="loading">載入中...</div>
+            <div class="flashcard-container" id="flashcard-container"></div>
+        </div>
+
+        <div class="content" id="marked">
+            <h2>已學單字列表</h2>
+            <div class="marked-words" id="marked-words-container"></div>
+        </div>
+
+        <div class="content" id="quiz">
+            <div id="quiz-loading" class="loading">載入中...</div>
+            <div class="quiz-container" id="quiz-container" style="display: none;">
+                <div class="quiz-word" id="quiz-word"></div>
+                <div class="options" id="options-container"></div>
+                <button class="next-btn" id="next-btn">下一題</button>
+                <div class="score" id="score">得分: 0/0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheet ID 與 API Key (實際應用中應該放到後端)
+        const SHEET_ID = '10Nd5O5IS6hXxPcHEoMSIcDi8IgXIv5Ov4thW6HVNows'; // 示範用，請替換成您的Sheet ID
+        const API_KEY = 'YOUR_API_KEY'; // 示範用，請替換成您的API Key
+        
+        // 全局變數
+        let allWords = [];
+        let quizWords = [];
+        let currentQuizIndex = 0;
+        let score = 0;
+        let totalQuestions = 0;
+        let markedWords = [];
+
+        // 初始化
+        $(document).ready(function() {
+            // 載入本地儲存的已標記單字
+            loadMarkedWords();
+            
+            // 從Google Sheet載入單字
+            fetchWords();
+            
+            // 創建星星背景
+            createStars();
+            
+            // 分頁切換
+            $('.tab').click(function() {
+                $('.tab').removeClass('active');
+                $(this).addClass('active');
+                
+                const tabId = $(this).data('tab');
+                $('.content').removeClass('active');
+                $(`#${tabId}`).addClass('active');
+                
+                if (tabId === 'quiz' && quizWords.length === 0) {
+                    setupQuiz();
+                }
+            });
+            
+            // 下一題按鈕
+            $('#next-btn').click(nextQuestion);
+        });
+
+        // 創建星星背景
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starsCount = 100;
+            
+            for (let i = 0; i < starsCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // 隨機位置
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                
+                // 隨機大小
+                const size = Math.random() * 3;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                // 隨機透明度
+                star.style.opacity = Math.random();
+                
+                // 隨機閃爍動畫
+                const duration = 3 + Math.random() * 5;
+                star.style.animation = `twinkle ${duration}s infinite alternate`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // 從Google Sheets獲取單字數據
+        function fetchWords() {
+            // 實際應用中應該使用適當的授權和API調用
+            // 這裡使用模擬數據進行演示
+            
+            // 模擬API延遲
+            setTimeout(() => {
+                // 模擬從Google Sheet獲取的數據
+                const mockData = [
+                    { english: "Galaxy", chinese: "星系" },
+                    { english: "Nebula", chinese: "星雲" },
+                    { english: "Astronaut", chinese: "太空人" },
+                    { english: "Spacecraft", chinese: "太空船" },
+                    { english: "Planet", chinese: "行星" },
+                    { english: "Comet", chinese: "彗星" },
+                    { english: "Universe", chinese: "宇宙" },
+                    { english: "Constellation", chinese: "星座" },
+                    { english: "Meteor", chinese: "流星" },
+                    { english: "Gravity", chinese: "重力" },
+                    { english: "Satellite", chinese: "衛星" },
+                    { english: "Astronomy", chinese: "天文學" }
+                ];
+                
+                allWords = mockData;
+                
+                // 更新閃卡區域
+                updateFlashcards();
+                
+                // 設置測驗
+                setupQuiz();
+                
+                // 隱藏載入中提示
+                $('#flashcard-loading').hide();
+                $('#quiz-loading').hide();
+            }, 1000);
+        }
+
+        // 更新閃卡區域
+        function updateFlashcards() {
+            const container = $('#flashcard-container');
+            container.empty();
+            
+            // 過濾掉已標記的單字
+            const wordsToShow = allWords.filter(word => 
+                !markedWords.some(marked => marked.english === word.english)
+            );
+            
+            if (wordsToShow.length === 0) {
+                container.html('<div class="no-words">太棒了！您已學完所有單字</div>');
+                return;
+            }
+            
+            wordsToShow.forEach(word => {
+                const card = $(`
+                    <div class="flashcard" data-word="${word.english}">
+                        <div class="front">${word.chinese}</div>
+                        <div class="back">${word.english}</div>
+                        <button class="mark-btn" data-word="${word.english}" data-chinese="${word.chinese}">標記已學</button>
+                    </div>
+                `);
+                
+                container.append(card);
+            });
+            
+            // 閃卡翻轉功能
+            $('.flashcard').click(function(e) {
+                // 如果點擊的是按鈕，不翻轉卡片
+                if ($(e.target).hasClass('mark-btn')) return;
+                
+                $(this).toggleClass('flipped');
+            });
+            
+            // 標記已學功能
+            $('.mark-btn').click(function(e) {
+                e.stopPropagation();
+                const english = $(this).data('word');
+                const chinese = $(this).data('chinese');
+                
+                markWord(english, chinese);
+                
+                // 移除卡片
+                $(this).closest('.flashcard').fadeOut(300, function() {
+                    $(this).remove();
+                    
+                    // 檢查是否所有卡片都已移除
+                    if ($('#flashcard-container .flashcard').length === 0) {
+                        $('#flashcard-container').html('<div class="no-words">太棒了！您已學完所有單字</div>');
+                    }
+                });
+            });
+        }
+
+        // 標記單字為已學
+        function markWord(english, chinese) {
+            markedWords.push({ english, chinese });
+            
+            // 儲存到本地儲存
+            localStorage.setItem('markedWords', JSON.stringify(markedWords));
+            
+            // 更新已學單字區域
+            updateMarkedWords();
+        }
+
+        // 取消標記單字
+        function unmarkWord(english) {
+            markedWords = markedWords.filter(word => word.english !== english);
+            
+            // 更新本地儲存
+            localStorage.setItem('markedWords', JSON.stringify(markedWords));
+            
+            // 更新已學單字區域
+            updateMarkedWords();
+            
+            // 更新閃卡區域
+            updateFlashcards();
+        }
+
+        // 更新已學單字區域
+        function updateMarkedWords() {
+            const container = $('#marked-words-container');
+            container.empty();
+            
+            if (markedWords.length === 0) {
+                container.html('<div class="no-words">您尚未標記任何單字為已學</div>');
+                return;
+            }
+            
+            markedWords.forEach(word => {
+                const markedWord = $(`
+                    <div class="marked-word">
+                        <span>${word.chinese} - ${word.english}</span>
+                        <button class="unmark-btn" data-word="${word.english}">×</button>
+                    </div>
+                `);
+                
+                container.append(markedWord);
+            });
+            
+            // 取消標記功能
+            $('.unmark-btn').click(function() {
+                const english = $(this).data('word');
+                unmarkWord(english);
+            });
+        }
+
+        // 從本地儲存載入已標記單字
+        function loadMarkedWords() {
+            const saved = localStorage.getItem('markedWords');
+            
+            if (saved) {
+                markedWords = JSON.parse(saved);
+                updateMarkedWords();
+            }
+        }
+
+        // 設置測驗
+        function setupQuiz() {
+            $('#quiz-loading').show();
+            $('#quiz-container').hide();
+            
+            // 如果沒有單字，則不設置測驗
+            if (allWords.length === 0) return;
+            
+            quizWords = [...allWords];
+            shuffleArray(quizWords);
+            
+            currentQuizIndex = 0;
+            score = 0;
+            totalQuestions = 0;
+            
+            updateScore();
+            nextQuestion();
+            
+            $('#quiz-loading').hide();
+            $('#quiz-container').show();
+        }
+
+        // 下一題
+        function nextQuestion() {
+            if (currentQuizIndex >= quizWords.length) {
+                // 重置測驗
+                shuffleArray(quizWords);
+                currentQuizIndex = 0;
+            }
+            
+            const currentWord = quizWords[currentQuizIndex];
+            
+            // 更新問題
+            $('#quiz-word').text(currentWord.english);
+            
+            // 生成選項
+            const optionsContainer = $('#options-container');
+            optionsContainer.empty();
+            
+            // 獲取四個選項，包含正確答案
+            const options = getQuizOptions(currentWord.chinese);
+            
+            options.forEach(option => {
+                const optionElement = $(`<div class="option" data-chinese="${option}">${option}</div>`);
+                optionsContainer.append(optionElement);
+            });
+            
+            // 禁用下一題按鈕
+            $('#next-btn').prop('disabled', true);
+            
+            // 綁定選項點擊事件
+            $('.option').click(function() {
+                if ($(this).hasClass('correct') || $(this).hasClass('incorrect')) {
+                    return; // 已經選擇了答案
+                }
+                
+                const selectedChinese = $(this).data('chinese');
+                const isCorrect = selectedChinese === currentWord.chinese;
+                
+                // 標記所有選項
+                $('.option').each(function() {
+                    if ($(this).data('chinese') === currentWord.chinese) {
+                        $(this).addClass('correct');
+                    } else if ($(this).data('chinese') === selectedChinese) {
+                        $(this).addClass('incorrect');
+                    }
+                });
+                
+                // 更新分數
+                if (isCorrect) {
+                    score++;
+                }
+                totalQuestions++;
+                updateScore();
+                
+                // 啟用下一題按鈕
+                $('#next-btn').prop('disabled', false);
+            });
+            
+            currentQuizIndex++;
+        }
+
+        // 獲取測驗選項
+        function getQuizOptions(correctChinese) {
+            const options = [correctChinese];
+            
+            // 從所有單字中隨機選擇三個不同的中文選項
+            while (options.length < 4 && options.length < allWords.length) {
+                const randomIndex = Math.floor(Math.random() * allWords.length);
+                const chinese = allWords[randomIndex].chinese;
+                
+                if (!options.includes(chinese)) {
+                    options.push(chinese);
+                }
+            }
+            
+            // 打亂選項順序
+            shuffleArray(options);
+            
+            return options;
+        }
+
+        // 更新分數
+        function updateScore() {
+            $('#score').text(`得分: ${score}/${totalQuestions}`);
+        }
+
+        // 打亂數組順序
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+</body>
+</html>
