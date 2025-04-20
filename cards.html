@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電競風格英文單字記憶卡</title>
+    <style>
+        body {
+            font-family: 'Rajdhani', 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #0a0a0a;
+            color: #eee;
+        }
+        .container {
+            background-color: #121212;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid #00ffff;
+        }
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            letter-spacing: 2px;
+        }
+        .settings {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #00ffff;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #181818;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+        button {
+            background-color: #00ffaa;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+            font-family: 'Rajdhani', sans-serif;
+        }
+        button:hover {
+            background-color: #00ffdd;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 255, 221, 0.7);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        .flashcard {
+            width: 100%;
+            height: 250px;
+            perspective: 1500px;
+            margin-bottom: 20px;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+            letter-spacing: 1px;
+            overflow: hidden;
+        }
+        .flashcard-front {
+            background-color: #1a1a1a;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+        }
+        .flashcard-front::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+        .flashcard-back {
+            background-color: #1a1a1a;
+            color: #ff00ff;
+            transform: rotateY(180deg);
+            border: 2px solid #ff00ff;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #333;
+            background-color: #1a1a1a;
+            border-radius: 8px 8px 0 0;
+            margin-top: 30px;
+            display: flex;
+        }
+        .tab button {
+            background-color: transparent;
+            flex: 1;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 15px 16px;
+            transition: 0.3s;
+            color: #ccc;
+            box-shadow: none;
+            margin: 0;
+            border-radius: 0;
+        }
+        .tab button:hover {
+            background-color: #252525;
+            transform: none;
+        }
+        .tab button.active {
+            background-color: #00ffaa;
+            color: #000;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #333;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            background-color: #1a1a1a;
+        }
+        .mastered-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .mastered-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            background-color: #222;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .mastered-item:last-child {
+            border-bottom: none;
+        }
+        .mastered-word {
+            flex-grow: 1;
+            font-size: 18px;
+        }
+        .mastered-unmark {
+            background-color: #ff0055;
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 4px;
+            color: #fff;
+        }
+        .mastered-unmark:hover {
+            background-color: #ff0077;
+        }
+        .no-cards {
+            text-align: center;
+            padding: 40px;
+            font-size: 20px;
+            color: #00ffaa;
+        }
+        h2 {
+            color: #00ffaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba(0, 255, 170, 0.5);
+        }
+        .progress-bar {
+            height: 6px;
+            background-color: #333;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background-color: #00ffaa;
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 170, 0.7);
+        }
+        .status {
+            font-size: 16px;
+            color: #aaa;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .counter {
+            display: flex;
+            justify-content: space-between;
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>電競風格英文單字記憶卡</h1>
+        
+        <div class="settings">
+            <div class="input-group">
+                <label for="sheetId">Google Sheet ID：</label>
+                <input type="text" id="sheetId" placeholder="從Google Sheet URL複製ID">
+            </div>
+            <div class="input-group">
+                <label for="sheetName">工作表名稱：</label>
+                <input type="text" id="sheetName" placeholder="預設: Sheet1" value="Sheet1">
+            </div>
+            <button id="loadButton">載入單字</button>
+        </div>
+
+        <div class="tab">
+            <button class="tablink active" onclick="openTab(event, 'flashcardTab')">記憶卡</button>
+            <button class="tablink" onclick="openTab(event, 'masteredTab')">已熟記單字</button>
+        </div>
+
+        <div id="flashcardTab" class="tabcontent" style="display: block;">
+            <div class="progress-bar">
+                <div id="progressBar" class="progress"></div>
+            </div>
+            <div class="status" id="statusText">尚未載入單字</div>
+            
+            <div id="flashcardContainer" class="flashcard">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <p id="englishWord">請先載入單字</p>
+                    </div>
+                    <div class="flashcard-back">
+                        <p id="chineseWord"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="prevButton">上一個</button>
+                <button id="markMasteredButton">標記為已熟記</button>
+                <button id="nextButton">下一個</button>
+            </div>
+            
+            <div class="counter">
+                <span id="wordCounter">0/0</span>
+                <span id="masteredCounter">已熟記: 0</span>
+            </div>
+        </div>
+
+        <div id="masteredTab" class="tabcontent">
+            <h2>已熟記單字列表</h2>
+            <ul id="masteredList" class="mastered-list">
+                <!-- 已熟記單字將會動態加入這裡 -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let allWords = [];
+        let currentIndex = 0;
+        let masteredWords = new Set();
+        
+        // 從本地儲存讀取已熟記單字
+        function loadMasteredWords() {
+            const saved = localStorage.getItem('masteredWords');
+            if (saved) {
+                try {
+                    const savedWords = JSON.parse(saved);
+                    masteredWords = new Set(savedWords);
+                } catch (e) {
+                    console.error('無法解析已儲存的單字', e);
+                    masteredWords = new Set();
+                }
+            }
+            updateMasteredList();
+            updateCounters();
+        }
+        
+        // 儲存已熟記單字到本地儲存
+        function saveMasteredWords() {
+            localStorage.setItem('masteredWords', JSON.stringify([...masteredWords]));
+            updateMasteredList();
+            updateCounters();
+            updateProgressBar();
+        }
+        
+        // 更新已熟記單字列表
+        function updateMasteredList() {
+            const masteredList = document.getElementById('masteredList');
+            masteredList.innerHTML = '';
+            
+            if (masteredWords.size === 0) {
+                masteredList.innerHTML = '<p class="no-cards">尚未標記任何單字為已熟記</p>';
+                return;
+            }
+            
+            [...masteredWords].forEach(word => {
+                const [english, chinese] = word.split('|');
+                
+                const listItem = document.createElement('li');
+                listItem.className = 'mastered-item';
+                
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'mastered-word';
+                wordSpan.textContent = `${english} - ${chinese}`;
+                
+                const unmarkButton = document.createElement('button');
+                unmarkButton.className = 'mastered-unmark';
+                unmarkButton.textContent = '取消標記';
+                unmarkButton.onclick = function() {
+                    masteredWords.delete(word);
+                    saveMasteredWords();
+                    showNextCard();
+                };
+                
+                listItem.appendChild(wordSpan);
+                listItem.appendChild(unmarkButton);
+                masteredList.appendChild(listItem);
+            });
+        }
+        
+        // 更新計數器
+        function updateCounters() {
+            const availableWords = allWords.filter(word => 
+                !masteredWords.has(`${word.english}|${word.chinese}`)
+            );
+            
+            document.getElementById('wordCounter').textContent = 
+                `${currentIndex + 1}/${availableWords.length || 0}`;
+            
+            document.getElementById('masteredCounter').textContent = 
+                `已熟記: ${masteredWords.size}`;
+        }
+        
+        // 更新進度條
+        function updateProgressBar() {
+            if (allWords.length === 0) {
+                document.getElementById('progressBar').style.width = '0%';
+                return;
+            }
+            
+            const progress = (masteredWords.size / allWords.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            // 更新狀態文字
+            const statusText = document.getElementById('statusText');
+            if (progress === 100) {
+                statusText.textContent = '恭喜！所有單字已熟記';
+            } else {
+                const remainingWords = allWords.length - masteredWords.size;
+                statusText.textContent = `還有 ${remainingWords} 個單字需要學習`;
+            }
+        }
+        
+        // 切換標籤頁
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            const tablinks = document.getElementsByClassName("tablink");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // 顯示當前單字卡
+        function showCurrentCard() {
+            const flashcardContainer = document.getElementById('flashcardContainer');
+            const chineseWord = document.getElementById('chineseWord');
+            const englishWord = document.getElementById('englishWord');
+            
+            if (allWords.length === 0) {
+                englishWord.textContent = '請先載入單字';
+                chineseWord.textContent = '';
+                document.getElementById('markMasteredButton').disabled = true;
+                return;
+            }
+            
+            // 過濾掉已熟記的單字
+            const availableWords = allWords.filter(word => 
+                !masteredWords.has(`${word.english}|${word.chinese}`)
+            );
+            
+            if (availableWords.length === 0) {
+                englishWord.textContent = 'All words mastered!';
+                chineseWord.textContent = '恭喜！所有單字已熟記';
+                document.getElementById('markMasteredButton').disabled = true;
+                document.getElementById('statusText').textContent = '恭喜！所有單字已熟記';
+                return;
+            }
+            
+            if (currentIndex >= availableWords.length) {
+                currentIndex = 0;
+            }
+            
+            const word = availableWords[currentIndex];
+            englishWord.textContent = word.english;
+            chineseWord.textContent = word.chinese;
+            
+            // 確保卡片回到正面
+            flashcardContainer.classList.remove('flipped');
+            document.getElementById('markMasteredButton').disabled = false;
+            
+            // 更新計數器
+            updateCounters();
+        }
+        
+        // 前往下一個單字卡
+        function showNextCard() {
+            currentIndex++;
+            
+            // 過濾掉已熟記的單字
+            const availableWords = allWords.filter(word => 
+                !masteredWords.has(`${word.english}|${word.chinese}`)
+            );
+            
+            if (currentIndex >= availableWords.length) {
+                currentIndex = 0;
+            }
+            
+            showCurrentCard();
+        }
+        
+        // 前往上一個單字卡
+        function showPrevCard() {
+            currentIndex--;
+            
+            // 過濾掉已熟記的單字
+            const availableWords = allWords.filter(word => 
+                !masteredWords.has(`${word.english}|${word.chinese}`)
+            );
+            
+            if (currentIndex < 0) {
+                currentIndex = availableWords.length - 1;
+            }
+            
+            showCurrentCard();
+        }
+        
+        // 從Google Sheet載入資料
+        function loadFromGoogleSheet() {
+            const sheetId = document.getElementById('sheetId').value.trim();
+            if (!sheetId) {
+                alert('請輸入Google Sheet ID');
+                return;
+            }
+            
+            const sheetName = document.getElementById('sheetName').value.trim() || 'Sheet1';
+            const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=out:csv`;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('無法存取Google Sheet，請確保您的表格已公開分享');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // 解析CSV資料
+                    const lines = data.split('\n');
+                    allWords = [];
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        // 手動處理CSV，處理引號等
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        let inQuote = false;
+                        let currentValue = '';
+                        let values = [];
+                        
+                        for (let j = 0; j < line.length; j++) {
+                            const char = line[j];
+                            
+                            if (char === '"' && (j === 0 || line[j-1] !== '\\')) {
+                                inQuote = !inQuote;
+                            } else if (char === ',' && !inQuote) {
+                                values.push(currentValue);
+                                currentValue = '';
+                            } else {
+                                currentValue += char;
+                            }
+                        }
+                        values.push(currentValue);
+                        
+                        // 清理引號
+                        values = values.map(v => {
+                            if (v.startsWith('"') && v.endsWith('"')) {
+                                return v.substring(1, v.length - 1);
+                            }
+                            return v;
+                        });
+                        
+                        if (values.length >= 2) {
+                            // 假設第一列是英文，第二列是中文（調整順序）
+                            allWords.push({
+                                english: values[0],
+                                chinese: values[1]
+                            });
+                        }
+                    }
+                    
+                    if (allWords.length === 0) {
+                        alert('未找到單字資料，請確保表格至少有英文和中文兩列');
+                    } else {
+                        currentIndex = 0;
+                        showCurrentCard();
+                        updateProgressBar();
+                        // 儲存當前Sheet資訊到本地儲存
+                        localStorage.setItem('lastSheetId', sheetId);
+                        localStorage.setItem('lastSheetName', sheetName);
+                    }
+                })
+                .catch(error => {
+                    console.error('載入資料錯誤:', error);
+                    alert('無法載入資料: ' + error.message);
+                });
+        }
+        
+        // 網頁載入時執行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 載入已熟記單字
+            loadMasteredWords();
+            
+            // 載入上次使用的Sheet資訊
+            const lastSheetId = localStorage.getItem('lastSheetId');
+            const lastSheetName = localStorage.getItem('lastSheetName');
+            
+            if (lastSheetId) {
+                document.getElementById('sheetId').value = lastSheetId;
+            }
+            
+            if (lastSheetName) {
+                document.getElementById('sheetName').value = lastSheetName;
+            }
+            
+            // 註冊事件處理器
+            document.getElementById('loadButton').addEventListener('click', loadFromGoogleSheet);
+            
+            document.getElementById('flashcardContainer').addEventListener('click', function() {
+                this.classList.toggle('flipped');
+            });
+            
+            document.getElementById('nextButton').addEventListener('click', showNextCard);
+            
+            document.getElementById('prevButton').addEventListener('click', showPrevCard);
+            
+            document.getElementById('markMasteredButton').addEventListener('click', function() {
+                const availableWords = allWords.filter(word => 
+                    !masteredWords.has(`${word.english}|${word.chinese}`)
+                );
+                
+                if (availableWords.length > 0) {
+                    const word = availableWords[currentIndex];
+                    masteredWords.add(`${word.english}|${word.chinese}`);
+                    saveMasteredWords();
+                    showNextCard();
+                }
+            });
+            
+            // 如果有之前的Sheet資訊，自動載入資料
+            if (lastSheetId) {
+                loadFromGoogleSheet();
+            }
+        });
+    </script>
+</body>
+</html>
