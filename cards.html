@@ -515,7 +515,7 @@
             }
             
             const sheetName = document.getElementById('sheetName').value.trim() || 'Sheet1';
-            const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=out:csv`;
+            const url = `https://docs.google.com/spreadsheets/d/10Nd5O5IS6hXxPcHEoMSIcDi8IgXIv5Ov4thW6HVNows/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=out:csv`;
             
             fetch(url)
                 .then(response => {
